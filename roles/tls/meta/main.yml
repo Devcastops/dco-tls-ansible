@@ -3,7 +3,6 @@ galaxy_info:
   description: your role description
   company: BLINKBYTE
 
-
   license: Apache-2.0
 
   min_ansible_version: 2.1

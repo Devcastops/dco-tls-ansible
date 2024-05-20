@@ -1,9 +1,2 @@
 ---
 # vars file for tls
-lets_encrypt_user: letsencrypt
-lets_encrypt_group: letsencrypt
-tls_config: /etc/letsencrypt
-tls_email: test@example.com
-fqdn: example.com
-DNS_CLOUDFLARE_EMAIL: "{{ lookup('ansible.builtin.env', 'DNS_CLOUDFLARE_EMAIL') }}"
-DNS_CLOUDFLARE_API_KEY: "{{ lookup('ansible.builtin.env', 'DNS_CLOUDFLARE_API_KEY') }}"
