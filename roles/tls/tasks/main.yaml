@@ -1,0 +1,95 @@
+---
+
+- name: Create letsEncrypt Group
+  group:
+    name: "{{ lets_encrypt_group }}"
+
+- name: Create letsEncrypt User
+  user:
+    name: "{{ lets_encrypt_user }}"
+    group: "{{ lets_encrypt_group }}"
+
+- name: Install certbot
+  community.general.snap:
+    name: "{{item}}"
+    classic: true
+  with_items:
+    - certbot
+
+- name: Confirm plugin containment level
+  command:
+    cmd: snap set certbot trust-plugin-with-root=ok
+
+- name: Install certbot-dns-cloudflare
+  community.general.snap:
+    name: "{{item}}"
+    classic: true
+  with_items:
+    - certbot-dns-cloudflare
+
+- name: ensure lets encrypt folder
+  file:
+    state: directory
+    path: "{{ item }}"
+    owner: "{{ lets_encrypt_user }}"
+    group: "{{ lets_encrypt_group }}"
+    mode: 0750
+  with_items: 
+    - "{{ tls_config }}"
+    - "{{ tls_config }}/live"
+    - "{{ tls_config }}/archive"
+    - /var/log/letsencrypt
+    - /var/lib/letsencrypt
+
+- name: ensure lets encrypt log perms
+  file:
+    state: file
+    path: "{{ item }}"
+    owner: "{{ lets_encrypt_user }}"
+    group: "{{ lets_encrypt_group }}"
+    mode: 0640
+  with_items: 
+    - /var/log/letsencrypt/letsencrypt.log
+
+- name: Add cloudflare config
+  template:
+    src: cloudflare.ini.j2
+    dest: "{{tls_config}}/cloudflare.ini"
+    mode: 0600
+    owner: "{{ lets_encrypt_user }}"
+    group: "{{ lets_encrypt_group }}"
+  no_log: true
+  when: DNS_CLOUDFLARE_API_KEY is defined
+
+- name: Register certbot
+  shell: |
+    sudo -u {{ lets_encrypt_user }} certbot -n register --agree-tos --email  {{tls_email}}
+    touch "{{tls_config}}/.registered"
+  args:
+    creates: "{{tls_config}}/.registered"
+
+- name: Get Cert
+  command:
+    cmd: sudo -u {{ lets_encrypt_user }} certbot certonly --non-interactive  --agree-tos --dns-cloudflare --dns-cloudflare-credentials {{tls_config}}/cloudflare.ini -d *.{{ fqdn }}
+
+- name: ensure lets encrypt pem perms
+  file:
+    state: file
+    path: "{{ item }}"
+    owner: "{{ lets_encrypt_user }}"
+    group: "{{ lets_encrypt_group }}"
+    mode: 0640
+  with_items: 
+    - "{{ tls_config }}/archive/{{ fqdn }}/privkey1.pem"
+
+- name: Ensure logrote
+  template:
+    src: logrotate.j2
+    dest: "/etc/logrotate.d/certbot"
+    mode: 0644
+
+- name: Ensure crontab
+  template:
+    src: crontab.j2
+    dest: "/etc/cron.d/certbot"
+    mode: 0644
