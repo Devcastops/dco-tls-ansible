@@ -59,7 +59,9 @@
     owner: "{{ lets_encrypt_user }}"
     group: "{{ lets_encrypt_group }}"
   no_log: true
-  when: DNS_CLOUDFLARE_API_KEY is defined
+  when: 
+    - DNS_CLOUDFLARE_API_KEY is defined
+    - DNS_CLOUDFLARE_API_KEY != ""
 
 - name: Register certbot
   shell: |
@@ -67,12 +69,16 @@
     touch "{{tls_config}}/.registered"
   args:
     creates: "{{tls_config}}/.registered"
-  when: DNS_CLOUDFLARE_API_KEY is defined
+  when: 
+    - DNS_CLOUDFLARE_API_KEY is defined
+    - DNS_CLOUDFLARE_API_KEY != ""
 
 - name: Get Cert
   command:
     cmd: sudo -u {{ lets_encrypt_user }} certbot certonly --non-interactive  --agree-tos --dns-cloudflare --dns-cloudflare-credentials {{tls_config}}/cloudflare.ini -d *.{{ fqdn }}
-  when: DNS_CLOUDFLARE_API_KEY is defined
+  when: 
+    - DNS_CLOUDFLARE_API_KEY is defined
+    - DNS_CLOUDFLARE_API_KEY != ""
 
 - name: ensure lets encrypt pem perms
   file:
