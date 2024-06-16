@@ -67,10 +67,12 @@
     touch "{{tls_config}}/.registered"
   args:
     creates: "{{tls_config}}/.registered"
+  when: DNS_CLOUDFLARE_API_KEY is defined
 
 - name: Get Cert
   command:
     cmd: sudo -u {{ lets_encrypt_user }} certbot certonly --non-interactive  --agree-tos --dns-cloudflare --dns-cloudflare-credentials {{tls_config}}/cloudflare.ini -d *.{{ fqdn }}
+  when: DNS_CLOUDFLARE_API_KEY is defined
 
 - name: ensure lets encrypt pem perms
   file:
